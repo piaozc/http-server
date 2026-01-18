@@ -39,8 +39,6 @@ MainReactor::~MainReactor(){
     close(epoll_fd);
 }
 
-
-
 //服务器核心逻辑，主循环
 void MainReactor::start(){
     int n;
@@ -75,7 +73,10 @@ void MainReactor::handdle_accept(){
         if(setnonblocking(client_fd)==-1){
             std::cerr<<"set nonblock error"<<strerror(errno)<<std::endl;
         }
-
+        //选择一个SubReactor，将client_fd交给它
+        SubReactor* sub=subReactors[next_sub];
+        sub->addClient(client_fd);
+        next_sub=(next_sub+1)%subReactors.size();
     }
 }
 
