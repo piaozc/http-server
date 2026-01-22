@@ -9,9 +9,9 @@
 class SubReactor{
     public:
         //构造函数和析构函数
-        SubReactor();
+        SubReactor(ThreadPool* threadPool=nullptr);
         ~SubReactor();
-
+        
         void start();
         void stop();
 
@@ -20,7 +20,6 @@ class SubReactor{
 
     private:
         int epoll_fd;                       //客户端epoll实例
-        std::vector<int> client_fd;         //当前管理的客户端fd
         std::atomic<bool> running;          //控制事件循环是否进行
         ThreadPool* thread_pool;
         std::thread reactor_thread;         //事件循环线程

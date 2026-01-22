@@ -46,11 +46,7 @@ void MainReactor::start(){
     while(true){
         n=epoll_wait(epoll_fd,events,1024,-1);
         for(int i=0;i<n;i++){
-            if(events[i].data.fd==server_fd){
-                handdle_accept();
-            }else{
-                //分发给SubReactor
-            }
+            handdle_accept(); 
         }
     }
 }
