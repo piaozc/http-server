@@ -15,7 +15,7 @@ class SubReactor{
         void start();
         void stop();
 
-        //MainReactor调用，在accept后
+        //MainReactor调用，在accept后，注册epoll实例
         void addClient(int client_fd);
 
     private:
@@ -26,8 +26,6 @@ class SubReactor{
 
         //处理epoll_wait返回的就绪事件
         void handdleEvent(struct epoll_event* events,int num_events);
-
-        //内部注册客户端fd到epoll
-        void registerClient(int client_fd);
-
+        //线程函数
+        void thread_ew();
 };

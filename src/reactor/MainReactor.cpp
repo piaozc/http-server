@@ -41,6 +41,7 @@ MainReactor::~MainReactor(){
 
 //服务器核心逻辑，主循环
 void MainReactor::start(){
+    std::cout<<"mainR start"<<std::endl;
     int n;
     epoll_event events[1024];
     while(true){
@@ -73,6 +74,7 @@ void MainReactor::handdle_accept(){
         SubReactor* sub=subReactors[next_sub];
         sub->addClient(client_fd);
         next_sub=(next_sub+1)%subReactors.size();
+        
     }
 }
 
