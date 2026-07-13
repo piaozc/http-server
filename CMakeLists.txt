@@ -12,6 +12,7 @@ add_executable(my_server
     src/reactor/MainReactor.cpp
     src/reactor/SubReactor.cpp
     src/threadpool/ThreadPool.cpp
+    src/config/ServerConfig.cpp
     src/http/HttpParser.cpp
     src/http/HttpResponse.cpp
     src/business/MockBusinessClient.cpp

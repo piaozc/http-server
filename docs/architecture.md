@@ -39,6 +39,10 @@ The browser connection is owned by the C++ process, so the C++ process writes th
 
 ## Current Module Map
 
+- `config/server.conf`
+  - `active_environment` selects the runtime block.
+  - `[production]` keeps the online port and storage root.
+  - `[develop]` keeps the isolated test port and storage root.
 - `src/reactor`
   - `MainReactor` owns the listening socket.
   - `SubReactor` owns client epoll instances and `Connection` objects.
