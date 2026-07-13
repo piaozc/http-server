@@ -42,9 +42,12 @@ The browser connection is owned by the C++ process, so the C++ process writes th
 - `src/reactor`
   - `MainReactor` owns the listening socket.
   - `SubReactor` owns client epoll instances and `Connection` objects.
+  - `SubReactor` also owns an `eventfd` wakeup queue so worker threads can safely return results to the reactor thread.
   - `MainReactor::chooseSubReactor()` currently uses lowest connection count, and can later include queue depth, bandwidth, or latency.
 - `src/connection`
   - `Connection` owns one client fd, HTTP parse state, transfer state, read buffer, write buffer, upload fd, and download fd.
+  - Socket readiness and connection state changes stay on the reactor thread.
+  - File open/read/write tasks run in the thread pool and return completions through `SubReactor::postToLoop()`.
 - `src/http`
   - Minimal HTTP request parser and response builders.
 - `src/business`
@@ -53,7 +56,9 @@ The browser connection is owned by the C++ process, so the C++ process writes th
 - `src/transfer`
   - Shared transfer request, decision, and result types.
 - `src/threadpool`
-  - Generic task execution pool.
+  - Generic task execution pool for blocking work.
+  - Current file upload writes use `pwrite()` tasks.
+  - Current file download reads use `pread()` tasks.
   - Exposes queue depth for future load balancing.
 
 ## Planned IPC Protocol
@@ -110,4 +115,3 @@ Keep these concerns out of business logic:
 - Global reactor load through `SubReactor::load()`.
 - Worker queue pressure through `ThreadPool::queueSize()`.
 - Future token-bucket limiters can live in `src/transfer` and be called before reading upload bytes or streaming download chunks.
-

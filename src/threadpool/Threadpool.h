@@ -4,6 +4,7 @@
 
 #include <condition_variable>
 #include <cstddef>
+#include <functional>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -15,6 +16,7 @@ public:
     ~ThreadPool();
 
     int submit(Task* task);
+    int submit(std::function<void()> task);
     std::size_t queueSize();
     int workerCount() const;
 
@@ -28,4 +30,3 @@ private:
 
     void thread_func();
 };
-

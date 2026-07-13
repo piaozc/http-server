@@ -33,6 +33,15 @@ int ThreadPool::submit(Task* task) {
     return 0;
 }
 
+int ThreadPool::submit(std::function<void()> task) {
+    Task* wrapped = new FunctionTask(std::move(task));
+    int result = submit(wrapped);
+    if (result != 0) {
+        delete wrapped;
+    }
+    return result;
+}
+
 std::size_t ThreadPool::queueSize() {
     std::lock_guard<std::mutex> lock(queue_mutex);
     return task_queue.size();
@@ -62,4 +71,3 @@ void ThreadPool::thread_func() {
         delete task;
     }
 }
-
