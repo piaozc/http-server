@@ -1,15 +1,15 @@
 #pragma once
-#include<sys/socket.h>
-#include<sys/epoll.h>
-#include<iostream>
-#include<queue>
-#include<mutex>
-#include<cstring>
-#include<string>
+
+#include <cerrno>
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 class Task {
 public:
-    virtual ~Task() {}
+    virtual ~Task() = default;
     virtual void run() = 0;
 };
 
@@ -22,8 +22,8 @@ public:
         while (true) {
             ssize_t n = recv(client_fd, buf, sizeof(buf), 0);
             if (n > 0) {
-                // 这里只处理数据，不关 fd
-                std::cout<<buf<<std::endl;
+                std::cout.write(buf, n);
+                std::cout << std::endl;
             } else if (n == 0) {
                 closed = true;
                 break;

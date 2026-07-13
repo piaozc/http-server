@@ -4,6 +4,7 @@ build/
 *.exe
 *.so
 *.a
+*.gch
 .vscode/
 .idea/
 .DS_Store

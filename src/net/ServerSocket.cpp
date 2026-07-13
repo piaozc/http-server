@@ -1,11 +1,15 @@
-#include<iostream>
-#include<fcntl.h>
-#include<sys/epoll.h>
-#include<unistd.h>
-#include<cstring>
-#include<netdb.h>
-#include<string>
-#include"ServerSocket.h"
+#include "ServerSocket.h"
+
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
+#include <iostream>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <string>
+#include <sys/socket.h>
+#include <unistd.h>
 
 int setupServerSocket(int port){
     struct addrinfo hints;

@@ -1,31 +1,38 @@
 #pragma once
-#include"../net/ServerSocket.h"
-#include"../threadpool/Threadpool.h"
-#include<vector>
-#include<sys/epoll.h>
-#include<thread>
-#include<atomic>
 
-class SubReactor{
-    public:
-        //构造函数和析构函数
-        SubReactor(ThreadPool* threadPool=nullptr);
-        ~SubReactor();
-        
-        void start();
-        void stop();
+#include "../business/BusinessClient.h"
+#include "../connection/Connection.h"
+#include "../threadpool/Threadpool.h"
 
-        //MainReactor调用，在accept后，注册epoll实例
-        void addClient(int client_fd);
+#include <atomic>
+#include <cstddef>
+#include <memory>
+#include <sys/epoll.h>
+#include <thread>
+#include <unordered_map>
 
-    private:
-        int epoll_fd;                       //客户端epoll实例
-        std::atomic<bool> running;          //控制事件循环是否进行
-        ThreadPool* thread_pool;
-        std::thread reactor_thread;         //事件循环线程
+class SubReactor {
+public:
+    SubReactor(ThreadPool* threadPool, BusinessClient* businessClient);
+    ~SubReactor();
 
-        //处理epoll_wait返回的就绪事件
-        void handdleEvent(struct epoll_event* events,int num_events);
-        //线程函数
-        void thread_ew();
+    void start();
+    void stop();
+
+    void addClient(int client_fd);
+    std::size_t load() const;
+
+private:
+    int epoll_fd;
+    std::atomic<bool> running;
+    std::atomic<std::size_t> connection_count;
+    ThreadPool* thread_pool;
+    BusinessClient* business_client;
+    std::thread reactor_thread;
+    std::unordered_map<int, std::unique_ptr<Connection>> connections;
+
+    void handdleEvent(struct epoll_event* events, int num_events);
+    void thread_ew();
+    void updateClientEvents(int client_fd, bool want_write);
+    void closeClient(int client_fd);
 };

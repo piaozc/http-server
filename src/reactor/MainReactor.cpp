@@ -1,80 +1,95 @@
-#include"MainReator.h"
-#include"SubReactor.h"
-#include"../net/ServerSocket.h"
-#include<iostream>
-#include<fcntl.h>
-#include<sys/epoll.h>
-#include<unistd.h>
-#include<cstring>
-#include<netdb.h>
-#include<string>
+#include "MainReactor.h"
 
-//构造函数
-MainReactor::MainReactor(std::vector<SubReactor*>& subs,int port)
-    :subReactors(subs),next_sub(0)
-{
-    //创建server_fd
-    server_fd=setupServerSocket(port);
+#include "../net/ServerSocket.h"
+#include "SubReactor.h"
 
-    //创建epoll实例
-    epoll_fd=epoll_create1(0);
-    if(epoll_fd==-1){
-        std::cerr<<"epoll_creat failed"<<strerror(errno)<<std::endl;
+#include <cerrno>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <netinet/in.h>
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+MainReactor::MainReactor(std::vector<SubReactor*>& subs, int port)
+    : server_fd(-1), epoll_fd(-1), subReactors(subs), next_sub(0) {
+    server_fd = setupServerSocket(port);
+
+    epoll_fd = epoll_create1(0);
+    if (epoll_fd == -1) {
+        std::cerr << "epoll_create failed: " << strerror(errno) << std::endl;
         exit(1);
     }
 
-    //注册server_fd到epoll
-    epoll_event ev;
-    ev.events=EPOLLIN|EPOLLET;
-    ev.data.fd=server_fd;
-    if(epoll_ctl(epoll_fd,EPOLL_CTL_ADD,server_fd,&ev)==-1){
-        std::cerr<<"epoll_ctl error"<<strerror(errno)<<std::endl;
+    epoll_event ev {};
+    ev.events = EPOLLIN | EPOLLET;
+    ev.data.fd = server_fd;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev) == -1) {
+        std::cerr << "epoll_ctl add server failed: " << strerror(errno) << std::endl;
         exit(1);
     }
 }
 
-//析构函数
-MainReactor::~MainReactor(){
+MainReactor::~MainReactor() {
     close(server_fd);
     close(epoll_fd);
 }
 
-//服务器核心逻辑，主循环
-void MainReactor::start(){
-    std::cout<<"mainR start"<<std::endl;
-    int n;
+void MainReactor::start() {
+    std::cout << "main reactor start" << std::endl;
     epoll_event events[1024];
-    while(true){
-        n=epoll_wait(epoll_fd,events,1024,-1);
-        for(int i=0;i<n;i++){
-            handdle_accept(); 
+    while (true) {
+        int n = epoll_wait(epoll_fd, events, 1024, -1);
+        if (n == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
+            break;
+        }
+        for (int i = 0; i < n; ++i) {
+            if (events[i].data.fd == server_fd) {
+                handdle_accept();
+            }
         }
     }
 }
 
-//处理连接，accept循环
-void MainReactor::handdle_accept(){
-    int client_fd;
-    struct sockaddr_in client_addr;
-    socklen_t clientaddr_len=sizeof(client_addr);
-    while(true){
-        client_fd=accept(server_fd,(struct sockaddr*)&client_addr,&clientaddr_len);
-        //accept失败
-        if(client_fd==-1){
-            //到头了,退出循环
-            if(errno==EAGAIN||errno==EWOULDBLOCK){
+void MainReactor::handdle_accept() {
+    while (true) {
+        sockaddr_in client_addr {};
+        socklen_t clientaddr_len = sizeof(client_addr);
+        int client_fd = accept(server_fd, reinterpret_cast<sockaddr*>(&client_addr), &clientaddr_len);
+        if (client_fd == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 break;
-            }else continue;
+            }
+            continue;
         }
-        //accept成功,设置非阻塞client_fd,分发给SubReactor
-        if(setnonblocking(client_fd)==-1){
-            std::cerr<<"set nonblock error"<<strerror(errno)<<std::endl;
+
+        if (setnonblocking(client_fd) == -1) {
+            std::cerr << "set client nonblocking failed: " << strerror(errno) << std::endl;
+            close(client_fd);
+            continue;
         }
-        //选择一个SubReactor，将client_fd交给它
-        SubReactor* sub=subReactors[next_sub];
-        sub->addClient(client_fd);
-        next_sub=(next_sub+1)%subReactors.size();
-        
+
+        chooseSubReactor()->addClient(client_fd);
     }
 }
 
+SubReactor* MainReactor::chooseSubReactor() {
+    SubReactor* selected = subReactors[next_sub];
+    std::size_t selected_load = selected->load();
+
+    for (SubReactor* sub : subReactors) {
+        std::size_t load = sub->load();
+        if (load < selected_load) {
+            selected = sub;
+            selected_load = load;
+        }
+    }
+
+    next_sub = (next_sub + 1) % subReactors.size();
+    return selected;
+}
