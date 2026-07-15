@@ -5,6 +5,8 @@ build/
 *.so
 *.a
 *.gch
+.gocache/
+.gomodcache/
 .vscode/
 .idea/
 .DS_Store

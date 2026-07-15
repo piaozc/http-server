@@ -1,0 +1,9 @@
+{
+  "environment": "develop",
+  "http_addr": ":18080",
+  "ipc_addr": "127.0.0.1:19090",
+  "mongo_uri": "mongodb://127.0.0.1:27017",
+  "mongo_database": "cloud_disk_dev",
+  "storage_root": "../storage-dev"
+}
+

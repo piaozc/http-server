@@ -1,0 +1,9 @@
+{
+  "environment": "production",
+  "http_addr": ":18088",
+  "ipc_addr": "127.0.0.1:19091",
+  "mongo_uri": "mongodb://127.0.0.1:27017",
+  "mongo_database": "cloud_disk_prod",
+  "storage_root": "../storage-prod"
+}
+
